@@ -2,7 +2,7 @@
 
 > 这都是本人一步一步安装成功的，所以你可以按照下面的步骤进行安装，免得安装失败。
 
-## 1.安装Redis
+## 1、安装Redis
 
 ### 第一步：下载redis安装包
 ```
@@ -93,4 +93,101 @@ cp /usr/local/redis-4.0.9/utils/redis_init_script /etc/init.d/redisd
 ```
 启动：service redisd start
 关闭：service redisd stop
+```
+
+## 2、安装Rabbit消息中间件；
+>centos 7.1 内核版本 --> 3.10.0-229.el7.x86_64  
+>Erlang --> 19.0.4版本  
+>RabbitMQ --> 3.6.14版本  
+
+### 第一步、在线安装Erlang：
+* 1)、执行下列命令，下载Erlang的rpm包：
+```
+cd usr/local/src/
+wget http://www.rabbitmq.com/releases/erlang/erlang-19.0.4-1.el7.centos.x86_64.rpm
+```
+
+* 2)、执行下列命令，安装Erlang的rpm包：
+```
+rpm -ivh erlang-19.0.4-1.el7.centos.x86_64.rpm
+yum -y install erlang
+```
+
+* 3)、执行下列命令，测试Erlang是否安装成功：
+```
+erl -version
+结果显示：Erlang (SMP,ASYNC_THREADS,HIPE) (BEAM) emulator version 8.0.3
+```
+
+### 第二步、在线安装RabbitMQ：
+* 1)、执行下列命令，下载rabbitMQ server的rpm包：
+```
+wget https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v3_6_14/rabbitmq-server-3.6.14-1.el7.noarch.rpm
+```
+
+* 2)、执行下列命令，安装rabbitMQ server的rpm包：
+```
+yum install rabbitmq-server-3.6.14-1.el7.noarch.rpm
+```
+
+* 3)、执行下列命令，创建配置文件rabbitmq.config：
+```
+    cd /etc/rabbitmq/
+    vim rabbitmq.config
+    编辑内容如下：
+    [{rabbit, [{loopback_users, []}]}].
+    这里的意思是开放使用，rabbitmq默认创建的用户guest，密码也是guest，这个用户默认只能是本机访问，localhost或者127.0.0.1，从外部访问需要添加上面的配置。
+    保存配置后重启服务：
+    #service rabbitmq-server stop
+    #service rabbitmq-server start
+```
+
+* 4)、安装插件
+```
+/sbin/rabbitmq-plugins enable rabbitmq_management 
+```
+
+* 5)、重启rabbitmq服务
+```
+service rabbitmq-server restart 
+```
+到此,就可以通过http://ip:15672 使用guest,guest 进行登陆web页面了
+```
+RabbitMQ的一些基本操作:
+# 添加开机启动RabbitMQ服务
+systemctl enable rabbitmq-server.service
+# 查看服务状态
+systemctl status  rabbitmq-server.service
+# 启动服务
+systemctl start rabbitmq-server.service
+# 停止服务
+systemctl stop rabbitmq-server.service
+# 查看当前所有用户
+rabbitmqctl list_users
+# 查看默认guest用户的权限
+rabbitmqctl list_user_permissions guest
+# 由于RabbitMQ默认的账号用户名和密码都是guest。为了安全起见, 先删掉默认用户
+rabbitmqctl delete_user guest
+# 添加新用户
+rabbitmqctl add_user username password
+# 设置用户tag
+rabbitmqctl set_user_tags username administrator
+# 赋予用户默认vhost的全部操作权限
+rabbitmqctl set_permissions -p / username ".*" ".*" ".*"
+# 查看用户的权限
+rabbitmqctl list_user_permissions username
+更多关于rabbitmqctl的使用，可以参考帮助手册。
+开启web管理接口
+如果只从命令行操作RabbitMQ，多少有点不方便。幸好RabbitMQ自带了web管理界面，只需要启动插件便可以使用。
+rabbitmq-plugins enable rabbitmq_management
+访问:  http://localhost:15672
+配置RabbitMQ
+关于RabbitMQ的配置，可以下载RabbitMQ的配置文件模板到/etc/rabbitmq/rabbitmq.config, 然后按照需求更改即可。
+关于每个配置项的具体作用，可以参考官方文档。
+开启用户远程访问
+默认情况下，RabbitMQ的默认的guest用户只允许本机访问， 如果想让guest用户能够远程访问的话，只需要将配置文件中的loopback_users列表置为空即可，如下：
+{loopback_users, []}
+另外关于新添加的用户，直接就可以从远程访问的，如果想让新添加的用户只能本地访问，可以将用户名添加到上面的列表, 如只允许admin用户本机访问。
+{loopback_users, ["admin"]}
+restart …
 ```
